@@ -1,207 +1,410 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Architecture: Next.js + Supabase + Vercel</title>
-    <style>
-        :root {
-            --bg-color: #fcfbf9;
-            --card-bg: #ffffff;
-            --text-main: #1c1c1e;
-            --text-muted: #6e6e73;
-            --border-color: #d1d1d6;
-            --accent-border: #1c1c1e;
-            --highlight-bg: #f4f3ef;
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>蔡天鳳案｜人物關係與金錢物業線索圖</title>
+<style>
+  :root {
+    --bg: #FBF9F7;
+    --ink: #1A1A1A;
+    --muted: #6B6B6B;
+    --line: #C9C4BE;
+    --accent: #B3261E;
+    --accent-soft: #F4E3E1;
+    --finance: #4C6478;
+    --finance-soft: #E7EDF1;
+    --card: #FFFFFF;
+  }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+  * { box-sizing: border-box; }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: var(--font-family);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 40px 20px;
-        }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
 
-        .container {
-            max-width: 1000px;
-            width: 100%;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            padding: 48px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
-        }
+  .page {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 56px 48px 64px;
+  }
 
-        header {
-            margin-bottom: 40px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 24px;
-        }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 32px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+  }
 
-        h1 {
-            font-size: 24px;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-            margin-bottom: 8px;
-        }
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+    margin: 0 0 12px;
+  }
 
-        p.subtitle {
-            font-size: 14px;
-            color: var(--text-muted);
-        }
+  h1 {
+    margin: 0;
+    font-size: clamp(30px, 4vw, 48px);
+    line-height: 1.15;
+    font-weight: 800;
+    letter-spacing: -.01em;
+  }
 
-        .diagram-wrapper {
-            width: 100%;
-            overflow-x: auto;
-        }
+  .subtitle {
+    margin: 12px 0 0;
+    max-width: 720px;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
 
-        svg {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
+  .meta {
+    text-align: right;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+    white-space: nowrap;
+  }
 
-        .node-box {
-            fill: var(--card-bg);
-            stroke: var(--accent-border);
-            stroke-width: 1.5px;
-        }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-bottom: 28px;
+    font-size: 13px;
+    color: var(--muted);
+  }
 
-        .group-box {
-            fill: var(--highlight-bg);
-            stroke: var(--border-color);
-            stroke-dasharray: 4 4;
-            stroke-width: 1px;
-        }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 
-        .node-title {
-            font-family: var(--font-family);
-            font-size: 14px;
-            font-weight: 600;
-            fill: var(--text-main);
-        }
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
 
-        .node-desc {
-            font-family: var(--font-family);
-            font-size: 11px;
-            fill: var(--text-muted);
-        }
+  .dot.criminal { background: var(--accent); }
+  .dot.finance { background: var(--finance); }
+  .dot.family { background: var(--ink); }
 
-        .edge-line {
-            stroke: var(--text-main);
-            stroke-width: 1.5px;
-            fill: none;
-        }
+  .canvas {
+    background: var(--card);
+    border: 1px solid var(--line);
+    padding: 24px;
+  }
 
-        .edge-label {
-            font-family: var(--font-family);
-            font-size: 10px;
-            fill: var(--text-muted);
-            background: var(--card-bg);
-        }
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
 
-        .arrow {
-            fill: var(--text-main);
-        }
-    </style>
+  .node rect {
+    fill: var(--card);
+    stroke: var(--ink);
+    stroke-width: 1.1;
+  }
+
+  .node.central rect {
+    fill: var(--ink);
+    stroke: var(--ink);
+  }
+
+  .node.criminal rect {
+    stroke: var(--accent);
+    stroke-width: 1.4;
+  }
+
+  .node.finance rect {
+    stroke: var(--finance);
+  }
+
+  .node text {
+    fill: var(--ink);
+    font-size: 14px;
+    font-weight: 700;
+    text-anchor: middle;
+  }
+
+  .node .role {
+    fill: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .node.central text,
+  .node.central .role {
+    fill: #FFFFFF;
+  }
+
+  .tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+  }
+
+  .tag.criminal { fill: var(--accent); }
+  .tag.finance { fill: var(--finance); }
+
+  .link {
+    fill: none;
+    stroke: var(--line);
+    stroke-width: 1.2;
+  }
+
+  .link.criminal {
+    stroke: var(--accent);
+    stroke-dasharray: 5 4;
+  }
+
+  .link.finance {
+    stroke: var(--finance);
+    stroke-dasharray: 2 4;
+  }
+
+  .link.family {
+    stroke: var(--ink);
+  }
+
+  .edge-label {
+    font-size: 11px;
+    fill: var(--muted);
+    text-anchor: middle;
+  }
+
+  .edge-label.criminal { fill: var(--accent); font-weight: 700; }
+  .edge-label.finance { fill: var(--finance); font-weight: 700; }
+
+  .footnote {
+    margin-top: 24px;
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--muted);
+  }
+
+  .footnote strong { color: var(--ink); }
+
+  @media (max-width: 760px) {
+    .page { padding: 32px 18px; }
+    header { flex-direction: column; align-items: flex-start; }
+    .meta { text-align: left; white-space: normal; }
+    .canvas { padding: 10px; }
+  }
+</style>
 </head>
 <body>
-
-<div class="container">
-    <header>
-        <h1>System Architecture Diagram</h1>
-        <p class="subtitle">Production Stack: Next.js App Router deployed on Vercel connecting to Supabase Backend Services.</p>
-    </header>
-
-    <div class="diagram-wrapper">
-        <svg viewBox="0 0 900 500" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                    <path d="M 0 1 L 10 5 L 0 9 z" class="arrow"/>
-                </marker>
-            </defs>
-
-            <!-- Layer 1: Client -->
-            <g transform="translate(40, 180)">
-                <rect class="node-box" x="0" y="0" width="140" height="120" rx="2"/>
-                <text x="20" y="45" class="node-title">Client Browser</text>
-                <text x="20" y="70" class="node-desc">React / Tailwind</text>
-                <text x="20" y="90" class="node-desc">Static & SSR Views</text>
-            </g>
-
-            <!-- Layer 2: Vercel Deployment Group -->
-            <g transform="translate(260, 60)">
-                <rect class="group-box" x="0" y="0" width="300" height="360" rx="4"/>
-                <text x="20" y="30" class="node-title" style="font-size: 12px; letter-spacing: 1px; fill: var(--text-muted);">VERCEL CLOUD PLATFORM</text>
-
-                <!-- Next.js Frontend / SSR -->
-                <g transform="translate(20, 50)">
-                    <rect class="node-box" x="0" y="0" width="260" height="120" rx="2" style="fill: var(--card-bg);"/>
-                    <text x="20" y="45" class="node-title">Next.js App Router</text>
-                    <text x="20" y="70" class="node-desc">Server Components & API Routes</text>
-                    <text x="20" y="90" class="node-desc">Static Output & SSR Engine</text>
-                </g>
-
-                <!-- Vercel Edge / Middleware -->
-                <g transform="translate(20, 200)">
-                    <rect class="node-box" x="0" y="0" width="260" height="120" rx="2" style="fill: var(--card-bg);"/>
-                    <text x="20" y="45" class="node-title">Vercel Edge Middleware</text>
-                    <text x="20" y="70" class="node-desc">Auth Session Protection</text>
-                    <text x="20" y="90" class="node-desc">Global Edge Routing</text>
-                </g>
-            </g>
-
-            <!-- Layer 3: Supabase Backend Group -->
-            <g transform="translate(630, 60)">
-                <rect class="group-box" x="0" y="0" width="230" height="360" rx="4"/>
-                <text x="20" y="30" class="node-title" style="font-size: 12px; letter-spacing: 1px; fill: var(--text-muted);">SUPABASE BACKEND</text>
-
-                <!-- PostgreSQL DB -->
-                <g transform="translate(20, 50)">
-                    <rect class="node-box" x="0" y="0" width="190" height="120" rx="2" style="fill: var(--card-bg);"/>
-                    <text x="20" y="45" class="node-title">PostgreSQL DB</text>
-                    <text x="20" y="70" class="node-desc">Row Level Security (RLS)</text>
-                    <text x="20" y="90" class="node-desc">Realtime Subscriptions</text>
-                </g>
-
-                <!-- Supabase Auth & Storage -->
-                <g transform="translate(20, 200)">
-                    <rect class="node-box" x="0" y="0" width="190" height="120" rx="2" style="fill: var(--card-bg);"/>
-                    <text x="20" y="45" class="node-title">Auth & Storage</text>
-                    <text x="20" y="70" class="node-desc">JWT / OAuth Providers</text>
-                    <text x="20" y="90" class="node-desc">Object Storage Buckets</text>
-                </g>
-            </g>
-
-            <!-- Connecting Edges -->
-            <!-- Client to Vercel Edge -->
-            <path class="edge-line" d="M 180 220 L 260 220" marker-end="url(#arrow)"/>
-            <text x="205" y="210" class="edge-label">HTTPS</text>
-
-            <!-- Vercel Edge to Next.js App -->
-            <path class="edge-line" d="M 390 180 L 390 260" marker-end="url(#arrow)"/>
-
-            <!-- Next.js App to Supabase DB -->
-            <path class="edge-line" d="M 560 140 L 650 140" marker-end="url(#arrow)"/>
-            <text x="585" y="130" class="edge-label">SQL / REST</text>
-
-            <!-- Next.js App to Supabase Auth -->
-            <path class="edge-line" d="M 560 280 L 650 280" marker-end="url(#arrow)"/>
-            <text x="580" y="270" class="edge-label">SDK / JWT</text>
-        </svg>
+<main class="page">
+  <header>
+    <div>
+      <p class="eyebrow">Case Relationship Map</p>
+      <h1>蔡天鳳案<br>人物關係與金錢物業線索圖</h1>
+      <p class="subtitle">以蔡天鳳為中心，呈現前夫家庭、現任伴侶、子女、涉案者，以及控方與媒體報道所提及的物業、財產及動機線索。</p>
     </div>
-</div>
+    <div class="meta">
+      香港高等法院案件<br>
+      資料截至 2026 年 10 月<br>
+      僅呈現公開報道與司法資料
+    </div>
+  </header>
 
+  <section class="legend">
+    <div class="legend-item"><span class="dot family"></span>家庭／伴侶關係</div>
+    <div class="legend-item"><span class="dot criminal"></span>刑事指控／涉案關係</div>
+    <div class="legend-item"><span class="dot finance"></span>金錢、物業與動機線索</div>
+  </section>
+
+  <section class="canvas">
+    <svg viewBox="0 0 1360 900" role="img" aria-label="蔡天鳳案人物關係與金錢物業線索圖">
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#6B6B6B"></path>
+        </marker>
+      </defs>
+
+      <!-- Family links -->
+      <path class="link family" d="M680 450 C560 380 500 320 430 260"></path>
+      <path class="link family" d="M680 450 C560 520 500 580 430 640"></path>
+      <path class="link family" d="M430 260 C350 220 300 200 240 180"></path>
+      <path class="link family" d="M430 640 C350 680 300 700 240 720"></path>
+      <path class="link family" d="M240 180 C200 280 200 620 240 720"></path>
+      <path class="link family" d="M240 180 C180 150 150 140 110 130"></path>
+      <path class="link family" d="M240 720 C180 750 150 760 110 770"></path>
+      <path class="link family" d="M930 450 C1010 420 1060 400 1110 380"></path>
+
+      <!-- Criminal links -->
+      <path class="link criminal" d="M680 450 C620 330 560 250 470 180"></path>
+      <path class="link criminal" d="M680 450 C740 330 800 250 890 180"></path>
+      <path class="link criminal" d="M680 450 C620 570 560 650 470 720"></path>
+      <path class="link criminal" d="M890 180 C950 260 980 340 1010 420"></path>
+      <path class="link criminal" d="M470 720 C520 770 570 790 630 800"></path>
+      <path class="link criminal" d="M890 720 C840 770 790 790 730 800"></path>
+
+      <!-- Finance / motive links -->
+      <path class="link finance" d="M680 450 C820 520 900 570 980 620"></path>
+      <path class="link finance" d="M980 620 C1040 620 1090 610 1140 590"></path>
+      <path class="link finance" d="M980 620 C1020 680 1060 710 1110 730"></path>
+      <path class="link finance" d="M240 450 C340 450 420 450 510 450"></path>
+      <path class="link finance" d="M240 450 C300 520 340 560 390 590"></path>
+
+      <!-- Edge labels -->
+      <text class="edge-label" x="520" y="330">前夫妻</text>
+      <text class="edge-label" x="840" y="330">前家翁</text>
+      <text class="edge-label" x="520" y="580">前家姑</text>
+      <text class="edge-label" x="840" y="580">前大伯</text>
+      <text class="edge-label criminal" x="540" y="270">被控謀殺</text>
+      <text class="edge-label criminal" x="820" y="270">被控謀殺</text>
+      <text class="edge-label criminal" x="540" y="650">妨礙司法公正</text>
+      <text class="edge-label criminal" x="970" y="330">被控謀殺</text>
+      <text class="edge-label criminal" x="610" y="825">協助罪犯</text>
+      <text class="edge-label criminal" x="750" y="825">協助罪犯</text>
+      <text class="edge-label finance" x="880" y="570">財產／物業糾紛</text>
+      <text class="edge-label finance" x="1090" y="580">出售何文田豪宅</text>
+      <text class="edge-label finance" x="1090" y="710">前夫一家居住安排</text>
+      <text class="edge-label finance" x="360" y="435">金錢往來</text>
+      <text class="edge-label finance" x="300" y="560">物業及商業往來</text>
+      <text class="edge-label" x="1030" y="400">現任伴侶</text>
+      <text class="edge-label" x="170" y="120">前家翁</text>
+      <text class="edge-label" x="170" y="790">前家姑</text>
+
+      <!-- Central node -->
+      <g class="node central" transform="translate(590,410)">
+        <rect x="0" y="0" width="180" height="80" rx="2"></rect>
+        <text x="90" y="34">蔡天鳳</text>
+        <text class="role" x="90" y="56">受害者</text>
+      </g>
+
+      <!-- Ex-husband -->
+      <g class="node criminal" transform="translate(380,140)">
+        <rect x="0" y="0" width="180" height="80" rx="2"></rect>
+        <text x="90" y="30">鄺港智</text>
+        <text class="role" x="90" y="50">前夫</text>
+        <text class="tag criminal" x="90" y="68">被控謀殺</text>
+      </g>
+
+      <!-- Father-in-law -->
+      <g class="node criminal" transform="translate(800,140)">
+        <rect x="0" y="0" width="180" height="80" rx="2"></rect>
+        <text x="90" y="30">鄺球</text>
+        <text class="role" x="90" y="50">前家翁</text>
+        <text class="tag criminal" x="90" y="68">被控謀殺</text>
+      </g>
+
+      <!-- Mother-in-law -->
+      <g class="node criminal" transform="translate(380,680)">
+        <rect x="0" y="0" width="180" height="80" rx="2"></rect>
+        <text x="90" y="30">李瑞香</text>
+        <text class="role" x="90" y="50">前家姑</text>
+        <text class="tag criminal" x="90" y="68">妨礙司法公正</text>
+      </g>
+
+      <!-- Brother-in-law -->
+      <g class="node criminal" transform="translate(800,680)">
+        <rect x="0" y="0" width="180" height="80" rx="2"></rect>
+        <text x="90" y="30">鄺港傑</text>
+        <text class="role" x="90" y="50">前大伯／前司機</text>
+        <text class="tag criminal" x="90" y="68">被控謀殺</text>
+      </g>
+
+      <!-- Mistress -->
+      <g class="node" transform="translate(950,380)">
+        <rect x="0" y="0" width="160" height="70" rx="2"></rect>
+        <text x="80" y="28">伍志榮</text>
+        <text class="role" x="80" y="48">鄺球情婦</text>
+        <text class="tag criminal" x="80" y="62">涉嫌協助罪犯</text>
+      </g>
+
+      <!-- Assistants -->
+      <g class="node criminal" transform="translate(540,770)">
+        <rect x="0" y="0" width="170" height="70" rx="2"></rect>
+        <text x="85" y="28">林舜</text>
+        <text class="role" x="85" y="48">遊艇公司職員</text>
+        <text class="tag criminal" x="85" y="62">協助罪犯罪成</text>
+      </g>
+
+      <g class="node criminal" transform="translate(650,770)">
+        <rect x="0" y="0" width="170" height="70" rx="2"></rect>
+        <text x="85" y="28">潘巧賢</text>
+        <text class="role" x="85" y="48">鄺港智友人</text>
+        <text class="tag criminal" x="85" y="62">協助罪犯罪成</text>
+      </g>
+
+      <!-- Current partner -->
+      <g class="node" transform="translate(1110,340)">
+        <rect x="0" y="0" width="170" height="80" rx="2"></rect>
+        <text x="85" y="30">譚方駿</text>
+        <text class="role" x="85" y="50">現任伴侶</text>
+        <text class="tag finance" x="85" y="68">非被告</text>
+      </g>
+
+      <!-- Children -->
+      <g class="node" transform="translate(150,140)">
+        <rect x="0" y="0" width="180" height="80" rx="2"></rect>
+        <text x="90" y="30">子女</text>
+        <text class="role" x="90" y="50">與前夫所生</text>
+      </g>
+
+      <g class="node" transform="translate(150,680)">
+        <rect x="0" y="0" width="180" height="80" rx="2"></rect>
+        <text x="90" y="30">子女</text>
+        <text class="role" x="90" y="50">與前夫所生</text>
+      </g>
+
+      <!-- Finance nodes -->
+      <g class="node finance" transform="translate(930,580)">
+        <rect x="0" y="0" width="200" height="80" rx="2"></rect>
+        <text x="100" y="30">金錢／物業糾紛</text>
+        <text class="role" x="100" y="50">控方指稱的背景線索</text>
+        <text class="tag finance" x="100" y="68">動機爭議</text>
+      </g>
+
+      <g class="node finance" transform="translate(1100,550)">
+        <rect x="0" y="0" width="200" height="80" rx="2"></rect>
+        <text x="100" y="30">何文田豪宅</text>
+        <text class="role" x="100" y="50">出售安排</text>
+        <text class="tag finance" x="100" y="68">財產線索</text>
+      </g>
+
+      <g class="node finance" transform="translate(1080,690)">
+        <rect x="0" y="0" width="220" height="80" rx="2"></rect>
+        <text x="110" y="30">前夫一家居住安排</text>
+        <text class="role" x="110" y="50">報道指與賣樓有關</text>
+        <text class="tag finance" x="110" y="68">居住／財產安排</text>
+      </g>
+
+      <g class="node finance" transform="translate(150,410)">
+        <rect x="0" y="0" width="180" height="80" rx="2"></rect>
+        <text x="90" y="30">金錢往來</text>
+        <text class="role" x="90" y="50">家庭與財務關係</text>
+      </g>
+
+      <g class="node finance" transform="translate(280,550)">
+        <rect x="0" y="0" width="220" height="80" rx="2"></rect>
+        <text x="110" y="30">物業及商業往來</text>
+        <text class="role" x="110" y="50">報道指涉及譚方駿家人</text>
+        <text class="tag finance" x="110" y="68">商業／物業線索</text>
+      </g>
+    </svg>
+  </section>
+
+  <section class="footnote">
+    <p><strong>說明：</strong>「被控謀殺」指鄺港智、鄺球及鄺港傑被控謀殺及阻止合法埋葬屍體；李瑞香涉及妨礙司法公正；伍志榮、林舜及潘巧賢涉及協助罪犯相關指控或定罪。金錢、物業及動機線索屬控方指控或媒體報道所提及的背景，並非已由法庭全面裁定的最終事實。</p>
+  </section>
+</main>
 </body>
 </html>
